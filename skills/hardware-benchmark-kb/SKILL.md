@@ -5,7 +5,7 @@ description: "Look up curated, dated laptop and desktop CPU/GPU benchmark snapsh
 
 # Hardware benchmark knowledge base
 
-Use this skill when a user asks how a CPU or GPU compares with another, or asks for a quantitative relative-performance reference. Read `references/benchmark-snapshot.json` before making a numerical claim.
+Use this skill when a user asks how a CPU or GPU compares with another, or asks for a quantitative relative-performance reference. Read `references/hardware-explainers.md` for stable terminology questions, `references/technical-qa.md` for routing and research limits, and `references/benchmark-snapshot.json` before making a numerical claim.
 
 ## Use rules
 

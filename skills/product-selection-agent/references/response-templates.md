@@ -25,6 +25,10 @@ Start with: `These are provisional candidates because [specific missing proof].`
 
 Use three labels only: `Relevant strengths`, `Points to check`, and `Bottom line`. Tie every point to the stated need or a source-backed listing fact.
 
+## Evidence wording
+
+Use `Shopee buyer rating: X from Y reviews` for marketplace ratings. When needed, explain that it is buyer feedback on that listing, not a laboratory or independent quality score. Use `The product page lists ...` for a manufacturer's or seller's stated specification, followed by `I have not independently tested it` only when that distinction affects the shopper's decision.
+
 ## Sales handoff
 
 Follow `sales-handoff.md`; it is a summary for a human and not a message sent to anyone.

@@ -35,7 +35,7 @@
 \newcommand{\headerrow}[1]{\rowcolor{Navy}\multicolumn{1}{c}{\bfseries #1}}
 \newcommand{\thead}[1]{\bfseries\centering #1\arraybackslash}
 
-\title{\bfseries AI Product Selection Agent\\[0.35em]\large A Category Neutral Evidence Grounded Product Selection Workflow}
+\title{\bfseries AI Product Selection Agent\\[0.35em]\large A Category-Neutral, Evidence-Grounded Product Selection Workflow}
 \author{\normalsize Team Bay2Bay \quad Team Code RZ9B4TXE\\[0.25em]
 \small SHEN QINGNING \quad Wang Jiahe \quad WEI ZIXIN \quad ZOU KAIYI}
 \date{\small 27 September 2026}
@@ -46,7 +46,7 @@
 \thispagestyle{plain}
 
 \begin{abstract}
-This document describes an OpenClaw-based AI Product Selection Agent for lawful consumer products. The system combines natural-language need understanding with live Shopee Singapore retrieval and deterministic validation. It is designed to produce explainable shortlists while keeping product facts, uncertainty, and hard constraints separate from model-generated interpretation.
+This document describes an OpenClaw-based AI Product Selection Agent for lawful consumer products. The system combines natural-language need understanding with live Shopee Singapore retrieval and deterministic validation. It produces explainable shortlists in plain shopper language while keeping product facts, uncertainty, and hard constraints separate from model-generated interpretation.
 \end{abstract}
 
 \noindent\textbf{Keywords:} product selection, agent workflow, marketplace retrieval, validation, Shopee Singapore
@@ -65,7 +65,7 @@ Useful with little friction & The Agent creates a session-local Preference Profi
 Evidence before recommendation & Live listing facts come from Shopee and a verification layer determines whether a candidate can be described as a verified match. \\
 Clear uncertainty & Unknown stock, unbound variant prices, missing attributes, and unsupported performance targets are labelled rather than guessed. \\
 \rowcolor{PaleBlue}
-Consistent experience & The latest substantive customer message controls all visible output language, including labels, status messages, and handoff summaries. \\
+Consistent experience & The workspace output-language policy controls all visible output. The current deployment answers in English while extracting requirements from multilingual input. \\
 \bottomrule
 \end{tabularx}
 
@@ -108,7 +108,7 @@ Local knowledge and web research & Supplies technical context or current evidenc
 4. Retrieve and audit coverage & Search the one or two initial routes, merge and deduplicate cards, and run a deterministic coverage audit. A third recovery query is permitted only when fewer than two plausible same-category candidates were found. \\
 \rowcolor{PaleBlue}
 5. Verify and rank & Apply the budget gate before details, then verify selected models or variants once with the original user requirements unchanged. \\
-6. Explain & Return a maximum of three candidates, the recommendation and trade-offs, verification status, sources, and one recovery question only when needed. \\
+6. Explain & Return a maximum of three candidates, the recommendation and trade-offs, sources, and one recovery question only when needed. Translate evidence and uncertainty into plain shopper language. \\
 \bottomrule
 \end{tabularx}
 
@@ -136,9 +136,13 @@ Performance target unverified & Used when no matched benchmark supports the hard
 \begin{itemize}
   \item A new conversation starts without a prior budget, shortlist, or Preference Profile. Within a conversation, the latest explicit customer update replaces earlier values.
   \item Contradictory requirements may trigger additional clarification, but the system caps consecutive contradiction rounds to prevent an infinite loop.
-  \item For laptop gaming only, missing display conditions receive a visible default: built-in 1080p display, no external display, medium preset, native rendering, and no DLSS, FSR, XeSS, or frame generation. Other categories do not inherit computer-specific defaults.
+  \item For any laptop purchase that omits display conditions, the visible default is a built-in 1080p display with no external monitor. For a game or FPS request that also omits graphics conditions, the additional default is medium preset, native rendering, and no DLSS, FSR, XeSS, or frame generation. Other categories do not inherit computer-specific defaults.
   \item Technical specification questions do not launch Shopee unless the customer also requests live products or prices.
 \end{itemize}
+
+\subsection{Consumer-facing explanation}
+
+Internal evidence states are translated into ordinary shopper language before an answer is shown. For example, the Agent says ``Shopee buyer rating: 4.92 from 486 reviews'' rather than ``seller-listed rating'', and explains that this is buyer feedback on the listing rather than an independent quality test. Similarly, it says ``the product page lists 65 W charging'' rather than ``seller claim'', and names the exact missing fact when a price, stock state, pack count, benchmark, or configuration cannot be confirmed. Plain language never weakens the underlying evidence boundary.
 
 \section{Skills and Operating Controls}
 
@@ -147,7 +151,7 @@ The active workspace uses focused Skills rather than a single unrestricted promp
 \begin{tabularx}{\textwidth}{@{}p{2.18in}Y@{}}
 \rowcolor{Navy}\thead{Resource} & \thead{Role in the system} \\
 \toprule
-AGENTS.md and IDENTITY.md & Set the category-neutral role, lawful-product scope, safety boundary, language behaviour, and identity answer. \\
+identity, scope, and plain-language references & Set the category-neutral role, lawful-product scope, safety boundary, English output policy, identity answer, and shopper-facing evidence wording. \\
 \rowcolor{PaleBlue}
 product-selection-agent Skill & Runs selection, comparison, listing explanation, and follow-up behaviour; calls final variant verification exactly once. \\
 product-selection-discovery Skill & Creates the structured LLM query plan, audits query shape and retrieval coverage, runs bounded Shopee discovery, and applies the category-neutral budget gate before detail retrieval. \\
@@ -156,6 +160,10 @@ normalisation, response contract, and sales handoff references & Keep safe forma
 technical QA and benchmark knowledge base & Explain hardware in plain language and separate laptop and desktop context; seek current research only when needed. \\
 \bottomrule
 \end{tabularx}
+
+\subsection{Regression coverage}
+
+The deployed deterministic regression suite contains 18 automated tests: four route and safety checks, eight query-planning and coverage checks, and six format-normalisation checks. It verifies that technical questions do not start Shopee retrieval without a product or price request; product discovery follows the marketplace route; sales handoff does not trigger a purchase action; query plans remain bounded and distinct; and safe representations such as \texttt{500ml}/\texttt{500 ml} do not create unsafe unit or sizing conversions. These tests protect workflow and evidence boundaries; they do not replace end-to-end review of natural-language quality on live marketplace data.
 
 \subsection{Safety and failure behaviour}
 \begin{tabularx}{\textwidth}{@{}p{2.12in}Y@{}}
@@ -178,7 +186,7 @@ The design is deliberately conservative: a candidate can still be useful to show
 \begin{tabularx}{\textwidth}{@{}p{2.67in}Y@{}}
 \rowcolor{Navy}\thead{Current limitation} & \thead{Planned improvement} \\
 \toprule
-Shopee may expose a product-level starting price without a selected variant or SKU price. & Add variant-aware price and stock retrieval so a chosen configuration can be checked directly against the customer budget. \\
+Some Shopee listings do not expose a clearly selectable configuration or SKU price. & Improve evidence coverage for these listings while keeping their budget status pending until a chosen configuration can be verified. \\
 \rowcolor{PaleBlue}
 A game-FPS target cannot be proved from component tier, TGP, refresh rate, or a local relative score. & Create a benchmark evidence registry containing source, system configuration, game settings, rendering conditions, and date. \\
 Live web research may face bot detection or access limits. & Use reliable source registries and monitor research failures without bypassing access controls. \\
@@ -188,6 +196,8 @@ New categories may require additional product-specific understanding. & Maintain
 \rowcolor{PaleBlue}
 \bottomrule
 \end{tabularx}
+
+\noindent\textbf{Operational dependencies.} The live deployment depends on the OpenClaw gateway, a configured model provider, Shopee Singapore retrieval and variant-verification tools, and optional web research for current technical evidence. Credentials, runtime configuration, conversation sessions, and logs are intentionally excluded from the project source repository.
 
 \subsection{Conclusion}
 

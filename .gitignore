@@ -1,0 +1,27 @@
+# Secrets and local OpenClaw runtime state
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*
+config.json
+.openclaw/
+sessions/
+memory/
+logs/
+
+# Generated or local-only files
+__pycache__/
+*.py[cod]
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.pdf
+.DS_Store
+
+# Dependencies
+node_modules/
+.venv/
+venv/

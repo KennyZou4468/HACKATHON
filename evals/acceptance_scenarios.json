@@ -1,0 +1,11 @@
+[
+  {"id":"vague_need","input":"I need a laptop for school.","route":"clarify_or_assume","assertions":["at_most_one_normal_question","no_invented_hard_requirement"]},
+  {"id":"conflict","input":"I need exactly 20 bottles and at least 30 bottles.","route":"conflict_clarification","assertions":["name_conflict","max_two_consecutive_conflict_questions"]},
+  {"id":"budget_update","input":"My budget is now SGD 180, not SGD 120.","route":"profile_update","assertions":["latest_budget_wins","refresh_price_and_stock"]},
+  {"id":"unbound_variant_price","input":"Recommend the SGD 999 laptop listing with multiple configurations.","route":"variant_verification","assertions":["budget_pending_without_selected_variant","no_remaining_budget_arithmetic"]},
+  {"id":"no_match","input":"Find a new 24 x 500ml water carton for SGD 1.","route":"discovery_recovery","assertions":["limited_no_match","one_recovery_choice"]},
+  {"id":"wrong_category","input":"Find a 500ml drinking-water multipack under SGD 10.","route":"discovery_filter","assertions":["exclude_empty_bottles_and_other_drinks","detail_check_only_plausible_products"]},
+  {"id":"multilingual","input":"我想买一双 US 9 的跑鞋，预算 120 新币。","route":"discovery","assertions":["extract_multilingual_requirements","english_output"]},
+  {"id":"sales_handoff","input":"Please prepare a summary for a human sales representative.","route":"handoff","assertions":["need_budget_candidates_gaps_links","no_claim_of_contact"]},
+  {"id":"technical_route","input":"What is the practical difference between 16GB and 32GB RAM for coding?","route":"technical","assertions":["no_shopee_without_product_or_price_request","plain_language_explanation"]}
+]

@@ -1,0 +1,196 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[table]{xcolor}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{ragged2e}
+\usepackage{microtype}
+
+\definecolor{Navy}{HTML}{EFEFEF}
+\definecolor{PaleBlue}{HTML}{FFFFFF}
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+\newcolumntype{C}{>{\Centering\arraybackslash}X}
+\renewcommand{\arraystretch}{1.18}
+\setlength{\tabcolsep}{6pt}
+\setlist[itemize]{leftmargin=1.35em,itemsep=2pt,topsep=3pt}
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.45em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.45em}{}
+\titlespacing*{\section}{0pt}{14pt}{5pt}
+\titlespacing*{\subsection}{0pt}{9pt}{3pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small AI Product Selection Agent}
+\fancyhead[R]{\small Team Bay2Bay}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\newcommand{\headerrow}[1]{\rowcolor{Navy}\multicolumn{1}{c}{\bfseries #1}}
+\newcommand{\thead}[1]{\bfseries\centering #1\arraybackslash}
+
+\title{\bfseries AI Product Selection Agent\\[0.35em]\large A Category Neutral Evidence Grounded Product Selection Workflow}
+\author{\normalsize Team Bay2Bay \quad Team Code RZ9B4TXE\\[0.25em]
+\small SHEN QINGNING \quad Wang Jiahe \quad WEI ZIXIN \quad ZOU KAIYI}
+\date{\small 27 September 2026}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{plain}
+
+\begin{abstract}
+This document describes an OpenClaw-based AI Product Selection Agent for lawful consumer products. The system combines natural-language need understanding with live Shopee Singapore retrieval and deterministic validation. It is designed to produce explainable shortlists while keeping product facts, uncertainty, and hard constraints separate from model-generated interpretation.
+\end{abstract}
+
+\noindent\textbf{Keywords:} product selection, agent workflow, marketplace retrieval, validation, Shopee Singapore
+
+\section{Purpose and Current Scope}
+
+AI Product Selection Agent is an evidence-grounded purchase-decision assistant. It helps shoppers describe a need in everyday language, identifies hard requirements and preferences, retrieves relevant Shopee Singapore listings, compares up to three candidates, and explains trade-offs in the customer's language.
+
+The current implementation is category-neutral. It supports lawful consumer categories such as laptops, shoes, appliances, and furniture. Shopee Singapore is the current live catalogue source, so the Agent does not imply complete market coverage or availability outside that marketplace.
+
+\begin{tabularx}{\textwidth}{@{}p{1.62in}Y@{}}
+\rowcolor{Navy}\thead{Design goal} & \thead{Implementation} \\
+\toprule
+Useful with little friction & The Agent creates a session-local Preference Profile and asks at most one normal question before the first shortlist when the answer could materially change the decision. \\
+\rowcolor{PaleBlue}
+Evidence before recommendation & Live listing facts come from Shopee and a verification layer determines whether a candidate can be described as a verified match. \\
+Clear uncertainty & Unknown stock, unbound variant prices, missing attributes, and unsupported performance targets are labelled rather than guessed. \\
+\rowcolor{PaleBlue}
+Consistent experience & The latest substantive customer message controls all visible output language, including labels, status messages, and handoff summaries. \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Scope boundaries}
+\begin{itemize}
+  \item The Agent can select, compare, explain, and summarise lawful consumer products. It does not place orders, process payments, or contact sellers.
+  \item Unsafe, illegal, fraudulent, controlled, counterfeit, or harmful procurement requests are declined before any marketplace search.
+  \item The hardware benchmark knowledge base is used only for relevant computer-component questions; it is not applied to other product categories.
+\end{itemize}
+
+\section{Architecture and Decision Flow}
+
+The design separates language reasoning from marketplace facts. The model interprets a request and explains the result. Retrieval tools, source quotes, and deterministic validation control what may be claimed about a product.
+
+\begin{tabularx}{\textwidth}{@{}p{1.36in}Y Y@{}}
+\rowcolor{Navy}\thead{Layer} & \thead{Responsibility} & \thead{Control} \\
+\toprule
+OpenClaw gateway & Hosts the workspace, Agent, model provider, and tool routing on AWS. & Operational health and provider errors are handled at the gateway layer. \\
+\rowcolor{PaleBlue}
+Prompt and Skills & Define identity, scope, language lock, clarification policy, discovery procedure, and response format. & Skills route product selection, live discovery, technical explanations, and sales handoff. \\
+Query planning and coverage audit & The LLM proposes one or two semantic retrieval routes and one recovery route; deterministic audits enforce bounded, distinct queries and decide whether recovery is needed. & Query wording improves candidate recall only. It neither changes user hard conditions nor proves a product fact. \\
+\rowcolor{PaleBlue}
+Shopee live retrieval & Finds search cards and reads listing details from the configured marketplace. & Search is preference-led; the Agent does not claim wider or complete market coverage. \\
+Category-neutral validator & Checks budget evidence, model or variant identity, observed stock, source conflicts, and user hard conditions. & Only literal source observations are checked; unknown is an acceptable result. \\
+\rowcolor{PaleBlue}
+Format normalisation audit & Resolves only registered, unambiguous formatting differences after variant verification. & It can never override a failed budget, stock, model identity, source conflict, or a \texttt{not\_met} result. \\
+Local knowledge and web research & Supplies technical context or current evidence when appropriate. & Local relative scores never become an FPS claim; web access failures are not bypassed. \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Execution flow}
+\begin{tabularx}{\textwidth}{@{}p{1.35in}Y@{}}
+\rowcolor{Navy}\thead{Step} & \thead{Outcome} \\
+\toprule
+1. Understand & Extract product category, intended use, budget, hard requirements, preferences, and missing decision-critical information. \\
+\rowcolor{PaleBlue}
+2. Clarify or assume & Resolve contradictory requirements; otherwise ask one high-impact question only when necessary. Visible assumptions may be overridden immediately. \\
+3. Plan discovery & Build a structured LLM query plan: core category, decisive specification or alternative vocabulary, and one recovery query. The plan records which hard conditions are omitted from retrieval but remain mandatory for verification. \\
+\rowcolor{PaleBlue}
+4. Retrieve and audit coverage & Search the one or two initial routes, merge and deduplicate cards, and run a deterministic coverage audit. A third recovery query is permitted only when fewer than two plausible same-category candidates were found. \\
+\rowcolor{PaleBlue}
+5. Verify and rank & Apply the budget gate before details, then verify selected models or variants once with the original user requirements unchanged. \\
+6. Explain & Return a maximum of three candidates, the recommendation and trade-offs, verification status, sources, and one recovery question only when needed. \\
+\bottomrule
+\end{tabularx}
+
+\section{Evidence and Validation Rules}
+
+The Agent preserves the distinction between what the customer asks for, what a source states, and what remains unknown. It does not invent values, aliases, unit conversions, attributes, links, or evidence quotes.
+
+\begin{tabularx}{\textwidth}{@{}p{1.76in}Y@{}}
+\rowcolor{Navy}\thead{Evidence or state} & \thead{How the Agent uses it} \\
+\toprule
+Customer requirement & Kept in its original value, unit, named system, and comparison operator for every candidate in the shopping turn. \\
+\rowcolor{PaleBlue}
+Listing observation & Recorded only when the title, description, category, or seller attribute explicitly supports it. Source wording is retained as evidence. \\
+Normalised observation & A post-verification audit may accept only a registered safe representation such as spacing in \texttt{500ml} or an explicit \texttt{24 x 500ml} pack expression. Bare shorthand such as \texttt{24s} remains unknown. \\
+\rowcolor{PaleBlue}
+Exact listing price & May be checked as a price observation when it is explicitly shown for the relevant offer. \\
+Starting or range price & Useful for discovery, but not treated as the final price of a selected variant without variant evidence. \\
+Stock unknown & Used unless the source explicitly provides current stock evidence; an accessible listing or sold count is not stock confirmation. \\
+\rowcolor{PaleBlue}
+Performance target unverified & Used when no matched benchmark supports the hardware, game, settings, and rendering conditions requested by the customer. \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Interaction rules}
+\begin{itemize}
+  \item A new conversation starts without a prior budget, shortlist, or Preference Profile. Within a conversation, the latest explicit customer update replaces earlier values.
+  \item Contradictory requirements may trigger additional clarification, but the system caps consecutive contradiction rounds to prevent an infinite loop.
+  \item For laptop gaming only, missing display conditions receive a visible default: built-in 1080p display, no external display, medium preset, native rendering, and no DLSS, FSR, XeSS, or frame generation. Other categories do not inherit computer-specific defaults.
+  \item Technical specification questions do not launch Shopee unless the customer also requests live products or prices.
+\end{itemize}
+
+\section{Skills and Operating Controls}
+
+The active workspace uses focused Skills rather than a single unrestricted prompt. Each Skill defines a limited responsibility and hands off to the next step in the decision workflow.
+
+\begin{tabularx}{\textwidth}{@{}p{2.18in}Y@{}}
+\rowcolor{Navy}\thead{Resource} & \thead{Role in the system} \\
+\toprule
+AGENTS.md and IDENTITY.md & Set the category-neutral role, lawful-product scope, safety boundary, language behaviour, and identity answer. \\
+\rowcolor{PaleBlue}
+product-selection-agent Skill & Runs selection, comparison, listing explanation, and follow-up behaviour; calls final variant verification exactly once. \\
+product-selection-discovery Skill & Creates the structured LLM query plan, audits query shape and retrieval coverage, runs bounded Shopee discovery, and applies the category-neutral budget gate before detail retrieval. \\
+\rowcolor{PaleBlue}
+normalisation, response contract, and sales handoff references & Keep safe formatting checks and customer-facing shortlists or human handoff summaries compact, grounded, and language-consistent. \\
+technical QA and benchmark knowledge base & Explain hardware in plain language and separate laptop and desktop context; seek current research only when needed. \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Safety and failure behaviour}
+\begin{tabularx}{\textwidth}{@{}p{2.12in}Y@{}}
+\rowcolor{Navy}\thead{Condition} & \thead{Response} \\
+\toprule
+Unsafe or prohibited purchase request & Refuse before retrieval and do not provide sellers, prices, tactics, or workarounds. \\
+\rowcolor{PaleBlue}
+Shopee access or login failure & Stop live retrieval, preserve the customer requirement, and do not fabricate alternatives. \\
+Browser-profile conflict & Report it only when the tool returns explicit lock or session-conflict evidence. \\
+\rowcolor{PaleBlue}
+Missing benchmark or attribute & Give verified partial context and name the precise missing evidence rather than claiming certainty. \\
+Validator failure & Stop the recommendation cycle and report a preparation or validation error instead of improvising eligibility. \\
+\bottomrule
+\end{tabularx}
+
+\section{Current Limitations and Next Steps}
+
+The design is deliberately conservative: a candidate can still be useful to show, but it is not called a verified match when a hard condition lacks evidence. This protects users from false certainty while exposing the information needed for a decision.
+
+\begin{tabularx}{\textwidth}{@{}p{2.67in}Y@{}}
+\rowcolor{Navy}\thead{Current limitation} & \thead{Planned improvement} \\
+\toprule
+Shopee may expose a product-level starting price without a selected variant or SKU price. & Add variant-aware price and stock retrieval so a chosen configuration can be checked directly against the customer budget. \\
+\rowcolor{PaleBlue}
+A game-FPS target cannot be proved from component tier, TGP, refresh rate, or a local relative score. & Create a benchmark evidence registry containing source, system configuration, game settings, rendering conditions, and date. \\
+Live web research may face bot detection or access limits. & Use reliable source registries and monitor research failures without bypassing access controls. \\
+\rowcolor{PaleBlue}
+Marketplace ranking can hide standard products behind premium, accessory, or exact-phrase matches. & Use the bounded structured query plan, merged results, and a coverage-triggered recovery query; still label results as a retrieved marketplace sample. \\
+New categories may require additional product-specific understanding. & Maintain category-neutral verification while adding category-specific explanation references and regression scenarios. \\
+\rowcolor{PaleBlue}
+\bottomrule
+\end{tabularx}
+
+\subsection{Conclusion}
+
+The updated Agent is a general consumer-product decision workflow, not a laptop-only chatbot. Its reliability comes from assigning different jobs to different layers: the model understands and explains, live retrieval supplies marketplace evidence, and deterministic validation enforces hard boundaries before the final recommendation is written.
+
+\end{document}

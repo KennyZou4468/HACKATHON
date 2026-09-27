@@ -163,7 +163,7 @@ technical QA and benchmark knowledge base & Explain hardware in plain language a
 
 \subsection{Regression coverage}
 
-The deployed deterministic regression suite contains 18 automated tests: four route and safety checks, eight query-planning and coverage checks, and six format-normalisation checks. It verifies that technical questions do not start Shopee retrieval without a product or price request; product discovery follows the marketplace route; sales handoff does not trigger a purchase action; query plans remain bounded and distinct; and safe representations such as \texttt{500ml}/\texttt{500 ml} do not create unsafe unit or sizing conversions. These tests protect workflow and evidence boundaries; they do not replace end-to-end review of natural-language quality on live marketplace data.
+The deployed deterministic regression suite contains 18 automated tests: four route and safety checks, eight query-planning and coverage checks, and six format-normalisation checks. It checks route choice, bounded query planning, and safe representations such as \texttt{500ml}/\texttt{500 ml} without unsafe unit or sizing conversions. These tests protect workflow and evidence boundaries; they do not replace end-to-end review of natural-language quality on live marketplace data.
 
 \subsection{Safety and failure behaviour}
 \begin{tabularx}{\textwidth}{@{}p{2.12in}Y@{}}
@@ -197,7 +197,7 @@ New categories may require additional product-specific understanding. & Maintain
 \bottomrule
 \end{tabularx}
 
-\noindent\textbf{Operational dependencies.} The live deployment depends on the OpenClaw gateway, a configured model provider, Shopee Singapore retrieval and variant-verification tools, and optional web research for current technical evidence. Credentials, runtime configuration, conversation sessions, and logs are intentionally excluded from the project source repository.
+\noindent\textbf{Operational dependencies.} The deployment uses the OpenClaw gateway, a configured model provider, Shopee Singapore retrieval and variant-verification tools, and optional web research. Credentials, runtime configuration, sessions, and logs are excluded from the source repository.
 
 \subsection{Conclusion}
 
